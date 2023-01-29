@@ -17,9 +17,9 @@ type_synonym performance = string
 enumtype Status = standard | premiere
 definition [z_defs]: "Status = {standard, premiere}"
 
-\<comment>\<open>ex12.8, replace sorry for nope\<close>
-enumtype Response = okay | nope
-definition [z_defs]: "Response = {okay, nope}"
+
+enumtype Response = okay | "sorry"
+definition [z_defs]: "Response = {okay, sorry}"
 
 text\<open>At this level of abstraction, we have no need to consider the representation of seats and customers, so we introduce them as sets\<close>
 consts 
@@ -28,12 +28,10 @@ consts
   CUSTOMER  :: "customer set"
   PERFORMANCE:: "performance set"
 
+
 subsection \<open> Functions \<close>
 fun free :: "(seat set) \<times> (seat set)  \<Rightarrow> nat"
   where "free(a, b) = #(a - b)"
-(*#(a\<setminus>b) does not work: \setminus*)
-
-value "free({1,2,3,4,5,6,7},{2,3})"
 
 
 subsection \<open> State Space \<close>
@@ -42,22 +40,22 @@ zstore BoxOffice =
   \<comment> \<open>seating to represent the seating allocated for the performance. \<close>
   seating :: "seat set"
   \<comment> \<open>  a record of which seats have been sold, and to whom. It is a partial function, that is, no seat can be sold to two different customers, it is a subset of SEAT \<close>
-  \<comment>\<open>the order of variables is unimportant\<close>
   sold :: "seat \<Zpfun> customer"
-
   \<comment> \<open>status: the type of the performance: standard or premier\<close>
   status:: "Status"
   \<comment> \<open> a special type of customers who signed up as friends and are entitled to buy premier performance\<close>
   friends:: "customer set"
+where 
   \<comment> \<open> invariant 1: It should not be possible to book seating that has not been allocated for the performance \<close>
- 
-  \<comment>\<open>announced: a set of performance announed for a box office, these performance can be or not be opened for booking\<close>
- (* For Promotion:
-  announced:: "performance set"
-  booking:: "performance \<Zpfun> BoxOffice"*)
-  where "dom(sold) \<subseteq> seating"
+  "dom(sold) \<subseteq> seating"
   \<comment> \<open> invariant 2: If the current performance is a premiere, then seats may be sold only to friends of the theatre. \<close>
    "status= premiere \<longrightarrow> ran sold \<subseteq> friends"
+
+zstore GlobalOffice = 
+  \<comment>\<open>announced: a set of performance announed for a box office, any performance for which we are booking must have been announced.these performance can be or not yet be opened for booking\<close>
+  announced:: "performance set"
+  booking:: "performance \<Zpfun> BoxOffice"
+  where"dom booking \<subseteq> announced"
 
 
 
@@ -74,71 +72,92 @@ As seats allocated for this performance are unchanged by the operation, we omit 
 \<comment>\<open>PurchaseSucess = Purchase0 /\ Success\<close>
 zoperation PurchaseSuccess =
   over BoxOffice
-  params s\<in>SEAT c\<in>CUSTOMER
-  pre "s \<notin> dom(sold) \<and> s\<in>seating"
-  update "[sold \<leadsto> sold \<oplus> {s \<mapsto> c}
-         , r\<Zprime>=okay
+  params s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
+  pre " s\<in>(seating-dom(sold))"
+  update "[sold\<Zprime> =  sold \<oplus> {s \<mapsto> c}
           ]"
-(*\setminus brings error: 
-pre "s\<in>seating\<setminus> dom(sold)"*)
+
+zoperation GlobalPurchaseSucess = 
+  over GlobalOffice
+  params p\<in> PERFORMANCE  s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
+pre "p \<in> dom booking"
+update "[booking[p]:sold\<Zprime> = $booking[p]:sold \<oplus> {s \<mapsto> c}]"
 
 \<comment>\<open>ex12.12: PurchaseFailure = NotAvailable /\ Failure\<close>
 zoperation PurchaseFailure =
   over BoxOffice
-  params s\<in>SEAT c\<in>CUSTOMER
+  params s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
   pre "s \<notin> dom(sold) \<and> s\<notin>seating"
-  update "[r\<Zprime>=nope
-          ]"
+
+zoperation GlobalPurchaseFailure =
+  over GlobalOffice
+  params p\<in> PERFORMANCE s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
+  pre "s \<notin> dom($booking[p]:sold) \<and> s\<notin> $booking[p]:seating"
 
 \<comment>  \<open> Having purchased a seat, a customer may decide not to attend the performance. In this case, they may return the seat to the box office 
 The precondition for this operation is that the seat s has been sold to the customer c.
 The effect is defined using domain subtraction \<Zndres> to remove  {s \<mapsto> c} from sold\<close>
 
 \<comment> \<open>ReturnSucess= Return0 \<and> Success\<close>
+
 zoperation ReturnSuccess =
   over BoxOffice
-  params s\<in>SEAT c\<in>CUSTOMER
+  params s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
   pre "s \<in> dom(sold) \<and> c = sold s"
-  update "[sold \<leadsto> {s} \<Zndres> sold
-         , r\<Zprime>=okay
+  update "[sold\<Zprime> = {s} \<Zndres> sold
+           ]" 
+
+(*2nd condition c = booking[p]:sold s is wrong*)
+zoperation GlobalReturnSuccess =
+  over GlobalOffice
+  params p\<in> PERFORMANCE s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
+  pre "s \<in> dom($booking[p]:sold) \<and> c = booking[p]:sold s"
+  update "[booking[p]:sold\<Zprime> = {s} \<Zndres> $booking[p]:sold 
            ]" 
 
 \<comment> \<open>ex12.13: ReturnFailure= NotPossible \<and> Failure
 If this seat has not been sold, or if it has been sold to another customer, then it can not be returned\<close>
 zoperation ReturnFailure =
   over BoxOffice
-  params s\<in>SEAT c\<in>CUSTOMER r\<in>"{nope}"
+  params s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
   pre " c \<noteq> sold s"
+
+zoperation GlobalReturnFailure =
+  over GlobalOffice
+  params p\<in> PERFORMANCE s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
+  pre " c \<noteq> booking[p]:sold s"
  
 
-
-\<comment> \<open>shall this be an operation or integrated to other operations?\<close>
+\<comment> \<open>ex 12.10: output variables as params \<close>
 zoperation QueryAvailability =
   over BoxOffice
   params available\<in>"{free(seating, dom sold)}"
 
+zoperation GlobalQueryAvailability =
+  over GlobalOffice
+  params available\<in>"{free($booking[p]:seating, dom ($booking[p]:sold))}"
 
 
 
 subsection \<open> Structural Invariants \<close>
 
-lemma PurchaseSuccess_inv[hoare_lemmas]: "PurchaseSuccess(s, c) preserves BoxOffice_inv"
+lemma PurchaseSuccess_inv[hoare_lemmas]: "PurchaseSuccess(s, c, r) preserves BoxOffice_inv"
   apply (zpog_full; auto)
   oops
 
-lemma PurchaseFailure_inv[hoare_lemmas]: "PurchaseFailure(s, c) preserves BoxOffice_inv"
+lemma PurchaseFailure_inv[hoare_lemmas]: "PurchaseFailure(s, c, r) preserves BoxOffice_inv"
   by (zpog_full; auto)
 
 
-lemma ReturnSuccess_inv[hoare_lemmas]: "ReturnSuccess(s, c) preserves BoxOffice_inv"
+lemma ReturnSuccess_inv[hoare_lemmas]: "ReturnSuccess(s, c, r) preserves BoxOffice_inv"
   apply (zpog_full; auto)
   oops
 
-lemma ReturnFailure_inv[hoare_lemmas]: " ReturnFailure(s, c) preserves BoxOffice_inv"
+lemma ReturnFailure_inv[hoare_lemmas]: " ReturnFailure(s, c, r) preserves BoxOffice_inv"
   by (zpog_full; auto)
 
 
-lemma QueryAvailability_inv[hoare_lemmas]: "QueryAvailability() preserves BoxOffice_inv"
+lemma QueryAvailability_inv[hoare_lemmas]: "QueryAvailability(a) preserves BoxOffice_inv"
   by (zpog_full; auto)
 
 
@@ -148,59 +167,26 @@ subsection \<open> Safety Requirements \<close>
 
 
 subsection \<open> Machine and Animation \<close>
-
-zmachine BoxOfficeProc =
-  init "[seating \<leadsto> initalloc, sold \<leadsto> {\<mapsto>}]"
-  invariant BoxOffice_inv
-  operations PurchaseSuccess  PurchaseFailure  ReturnSuccess ReturnFailure QueryAvailability
-
-
-method deadlock_free uses invs =
-  (rule deadlock_free_z_machine
-  ,zpog_full
-  ,(simp, auto intro!: hl_zop_event hoare_lemmas invs)
-  ,(simp add: zop_event_is_event_block extchoice_event_block z_defs z_locale_defs wp Bex_Sum_iff,
-    expr_simp add: split_sum_all split_sum_ex))
-
-
-
-
-declare [[show_sorts]]
-
-ML \<open> @{term "case x of Inl x \<Rightarrow> fst (f x) | Inr x \<Rightarrow> fst (g x)" }\<close>
-
-lemma [simp]: "fst (case_sum f g x) = (case x of Inl x \<Rightarrow> fst (f x) | Inr x \<Rightarrow> fst (g x))"
-  by (auto simp add: sum.case_eq_if)
-
-
-ML \<open> @{term "case x of Inl (x::'c) \<Rightarrow> fst (f x) | Inr (x::'d + 'e) \<Rightarrow> fst (case x of Inl (x::'d) \<Rightarrow> g x)"}\<close>
-
-lemma [simp]: "fst (if b then x else y) = (if b then (fst x) else (fst y))"
-  by (simp add: if_distrib)
-
-
-
-lemma sum_explode: "(\<forall> x :: unit + 'a . P x) \<longleftrightarrow> (P (Inl ()) \<and> (\<forall> y::'a. P (Inr y)))"
-  by (auto simp add: sum.case_eq_if, metis old.sum.inducts old.unit.exhaust)
-
-definition [z_defs]: "BoxOffice_axioms = (SEAT \<noteq> {} \<and> CUSTOMER \<noteq> {})"
-
-lemma BoxOfficeProc_deadlock_free: "BoxOffice_axioms \<Longrightarrow> deadlock_free BoxOfficeProc" 
-  unfolding BoxOfficeProc_def
-  apply deadlock_free
-  oops
-
-
-
-
-
-
-subsection \<open> We define finite sets for each of the given sets to allow animation. \<close>
-
 def_consts 
   initalloc = "SEAT"
   SEAT = "{0,1,2,3}"
   CUSTOMER = "{STR ''Simon'', STR ''Jim'', STR ''Christian''}"
+  PERFORMANCE= "{STR ''p1'', STR ''p2'',STR ''p3''}"
+
+zmachine BoxOfficeProc =
+  init "[seating\<Zprime> = initalloc, sold\<Zprime>= {\<mapsto>}]"
+  operations PurchaseSuccess  PurchaseFailure  ReturnSuccess ReturnFailure QueryAvailability
+
+zmachine GlobalBoxOfficeProc =
+  init "[booking\<Zprime>={p1 \<mapsto> \<lblot> sold \<leadsto> {\<mapsto>} \<rblot>
+                  ,p2 \<mapsto> \<lblot> sold \<leadsto> {\<mapsto>} \<rblot>
+                  ,p3 \<mapsto> \<lblot> sold \<leadsto> {\<mapsto>} \<rblot>}]"
+  operations 
+ GlobalPurchaseFailure  GlobalReturnSuccess GlobalReturnFailure GlobalQueryAvailability
+
+
+subsection \<open> We define finite sets for each of the given sets to allow animation. \<close>
+
 
 animate BoxOfficeProc
 
