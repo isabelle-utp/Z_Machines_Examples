@@ -3,8 +3,8 @@ theory FileSystem
 
 begin 
 \<comment>\<open>we define the basic types: keys and data for local operations of File, and name for global System\<close>
-type_synonym key = integer
-type_synonym data = integer
+type_synonym key = int
+type_synonym data = int
 type_synonym name = string
 
 consts
@@ -12,7 +12,7 @@ consts
   DATA :: "data set"
   NAME :: "name set"
 
-(*shall report be lowercase here? ? ?*)
+
 enumtype report = key_in_use |key_not_in_use | okay | file_exists| file_does_not_exist |file_is_open | file_is_not_open
 
 definition [z_defs]: "Report = {key_in_use,  key_not_in_use, okay, file_exists, file_does_not_exist ,file_is_open , file_is_not_open}"
@@ -61,7 +61,7 @@ zoperation FailToRWD =
   over File
   params k\<in>KEY r\<in>"{key_not_in_use}"
   pre " k\<notin>dom contents "
-
+(*it is not obvious for the reader to link the operation behaviour of key not in use to failtoRWD. *)
 
 \<comment>\<open>KeyInUse: renamed as FailToAdd because it results in fail to add\<close>
 zoperation FailToAdd =
@@ -69,33 +69,31 @@ zoperation FailToAdd =
   params k\<in>KEY r\<in>"{key_in_use}"
   pre " k\<in>dom contents "
 
-(*Is it possible to combine success and fail in one operation as in Z? ? ? ? *)
+(*It is not possible to combine success and fail in one operation as in Z Machines *)
 
 
 subsection \<open>Local zmachine \<close>
 
 def_consts
-KEY = "{1,2,3}"
-DATA = "{100,101}"
-(*? ? ?  {1..5} fail*)
+KEY = "{1..3}"
+DATA = "{100..102}"
 
-(* there can be only one Init in a thy file?
- Init is a keyword and can not renamed as FileInit? ? 
-definition Init :: "File subst" where
+
+definition Init1 :: "File subst" where
   [z_defs]:
-  "Init = 
+  "Init1 = 
    [contents\<Zprime> = {\<mapsto>}
    ]"
-*)
+
 zmachine FileProc =
   over File
-  init "[contents\<Zprime> = {\<mapsto>}  ]"
+  init Init1
   operations ReadSuccess WriteSuccess AddSuccess 
 DeleteSuccess FailToRWD FailToAdd
 \<comment>\<open>When a file is initialised in 'init', it contains no data, so the value of 'contents' should be the empty function.\<close>
 
 
-(*animate FileProc *)
+animate FileProc 
 
 subsection \<open> Global state space \<close>
 \<comment>\<open>A file system contains a number of files indexed using a set of names.
@@ -106,7 +104,8 @@ zstore System =
   "files" :: "name \<Zpfun> File"
   "opened" :: "name set"
   where " opened \<subseteq> dom files "
-(*file and open are keywords, "" does not work in where section, so change file to files, open to opened*)
+(*file and open are keywords, double quotation "file" and "open" does not work in where section, so change file to files, open to opened
+ is this a bug? ? ? *)
 
 
 subsection \<open> Global operations, no local operation involved\<close>
@@ -174,7 +173,7 @@ zoperation FileIsNotOpen =
   params n\<in>NAME r\<in>"{file_is_not_open}"
   pre " n \<in> dom files \<and> n\<notin> opened"
 
-(*? ? ? can not link the report operation to the specific operation failure, e.g., OpenFail, CloseFail, etc.*)
+(*We can not link the report operation to the specific operation failure, e.g., OpenFail, CloseFail, etc.*)
 
 
 
@@ -187,10 +186,10 @@ zoperation KeyRead0Success =
   params n\<in>NAME  k\<in>KEY d\<in>DATA r\<in>"{okay}"
   pre "n\<in>opened \<and> k\<in> dom($files[n]:contents) \<and> d= ($files[n]:contents) k"
  (*one precondition is needed: n\<in>dom files, 
-Otherwise Animator Fails:
-Simulation: undefined CallStack (from HasCallStack):
-  error, called at ./Partial_Fun.hs:59:10 in main:Partial_Fun
-Same for the following 5 operations*)
+  we also have n\<in>opened in the precondition, as n\<in>opened \<rightarrow> n\<in>dom, so simplified to n\<in>opented.
+  Otherwise Animator Fails as follow:
+  Simulation: undefined CallStack (from HasCallStack):  error, called at ./Partial_Fun.hs:59:10 in main:Partial_Fun
+  Same for the following 5 operations*)
 
 zoperation KeyWrite0Success =
   over System
@@ -231,7 +230,7 @@ zoperation KeyFailToAdd0 =
 
 
 
-\<comment>\<open>the following ? Report operation is due to status of the file\<close>
+\<comment>\<open>the following  Report operation is due to status of the file\<close>
 (*these 2 are the same as FileIsNotOpen and FileDoesNotExists, still no way to link the report to a specific file management operation *)
 zoperation FileFailureDueToFileIsNotOpen =
   over System
@@ -248,10 +247,10 @@ zoperation FileFailureDueToFileDoesNotExists =
 definition Init :: "System subst" where
   [z_defs]:
   "Init = 
-   [files\<Zprime> = {'''' \<mapsto> \<lblot> contents \<leadsto> {\<mapsto>} \<rblot>},
+   [files\<Zprime> = {\<mapsto>},
   opened\<Zprime> = {}
    ]"
-(*files\<Zprime> = { \<mapsto> },why not work? ? ?  *)
+
 
 
 subsection \<open> Structural Invariants \<close>
