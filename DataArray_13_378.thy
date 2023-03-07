@@ -62,6 +62,8 @@ def_consts Value = "{0..7}"
 record PriData = 
   priority:: "nat"
   data :: "Data"
+show_record PriData
+
 \<comment>\<open>We convert PriData from a local state in the book 
 to a record.\<close>
 
