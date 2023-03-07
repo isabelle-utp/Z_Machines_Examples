@@ -9,7 +9,9 @@ subsection \<open> Types \<close>
 type_synonym "value" = int
 \<comment>\<open>value is a keyword, thus quoted\<close>
 
-\<comment>\<open>In a model of a data array, each element may be represented by an object of Data. Different from the example in usingz, we define Data as a basic type instead of a local state.\<close>
+\<comment>\<open>In a model of a data array, each element may be represented by an object of Data. 
+Different from the example in usingz, 
+we define Data as a basic type instead of a local state.\<close>
 type_synonym Data = "value"
 
 
@@ -18,8 +20,6 @@ consts
   Value :: "value set"
   
 subsection \<open> State Space \<close>
-
-
 
 
 \<comment>\<open>Array is Global state in UsingZ, we define it as a local zstore.
@@ -44,23 +44,28 @@ zoperation ArrayAssignData =
   params index\<in>Indices  new\<in>Value
   pre "index< length array"
 \<comment>\<open>index is the index of array
-in Z : index \<in> dom array, in ZM we map it to : index < lenght array.\<close>
+in Z : index \<in> dom array, 
+in ZM we map it to : index < lenght array.\<close>
   update "[array[index]\<Zprime> =new]"
 
 
 zmachine ArrayProc= 
  over Array
- init "[array\<Zprime> = []]"
+ init "[array\<Zprime> = [1,2,3,4,5]]"
  operations ArrayAssignData
 
+def_consts Indices = "{0..4}"
+def_consts Value = "{0..7}"
+
+(*animate ArrayProc*)
 
 record PriData = 
   priority:: "nat"
   data :: "Data"
-\<comment>\<open>We convert PriData from a local state in the book to a record.\<close>
+\<comment>\<open>We convert PriData from a local state in the book 
+to a record.\<close>
 
 consts PriDataSet :: "PriData set"
-
 
 
 \<comment>\<open>a new state space\<close>
@@ -85,10 +90,15 @@ zoperation StackAssignPriData =
 (* stack is a record list, we can NOT SEPERATELY update stack by updating 2 fields of data and priority , as they are not state variables.  *)
 
 
+zoperation Shine = 
+  over Stack
+  params stk\<in>"{stack}" 
+
 
 zmachine StackProc= 
  over Stack
- init "[stack\<Zprime> = []]"
- operations StackAssignPriData
+ init "[stack\<Zprime> = [\<lparr> priority = 2, data = 0 \<rparr>, \<lparr> priority =1, data = 3 \<rparr>, \<lparr> priority = 0, data = 5 \<rparr>]]"
+ operations StackAssignPriData Shine
 
+animate StackProc
 end
