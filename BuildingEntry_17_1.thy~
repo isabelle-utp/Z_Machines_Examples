@@ -4,10 +4,10 @@ theory BuildingEntry_17_1
   imports "Z_Machines.Z_Machine"
 begin
 
-text \<open>Usingz ex 17.1: We model a system that will monitor the access to a building.
+\<comment>\<open>Usingz ex 17.1: We model a system that will monitor the access to a building.
 The system should keep track of the people who are inside the building, and should forbid entry by more than a specified number of people at any time.\<close>
 
-text \<open>we define a basic type\<close>
+\<comment>\<open>we define a basic type\<close>
 type_synonym staff = nat
 
 consts 
@@ -15,27 +15,27 @@ consts
   maxentry :: nat
 \<comment>\<open>maxentry is the maximum number of people that may enter the building at any time\<close>
 
-text \<open>an abstract state space, s is to record the names of those currently inside the building; the state invariant restricts the number of people to be less or equal than maxentry.\<close>
+\<comment>\<open>an abstract state space, s is to record the names of those currently inside the building; the state invariant restricts the number of people to be less or equal than maxentry.\<close>
 zstore ASystem = 
   s :: "\<bbbP> staff"
   where "s \<in> \<bbbF> Staff" "#s \<le> maxentry"
 
 
-text \<open>A person who is not already recorded as being inside the building may enter it, providing there is enough room, i.e., s has not reached the maximum number.\<close>
+\<comment>\<open>A person who is not already recorded as being inside the building may enter it, providing there is enough room, i.e., s has not reached the maximum number.\<close>
 zoperation AEnterBuilding =
   over ASystem
   params p\<in>Staff
   pre "#s < maxentry \<and> p \<notin> s"
   update "[s\<Zprime> =  s \<union> {p}]"
 
-text \<open>A person who is in the building may leave it.\<close>
+\<comment>\<open>A person who is in the building may leave it.\<close>
 zoperation ALeaveBuilding =
   over ASystem
   params p\<in>Staff
   pre "p \<in> s"
   update "[s\<Zprime> =  s - {p}]"
 
-text \<open>Initially, there is no-one in the building\<close>
+\<comment>\<open>Initially, there is no-one in the building\<close>
 zmachine ABuildingEntry =
   over ASystem
   init "[s\<Zprime> = {}]"
@@ -50,26 +50,27 @@ def_consts
 animate ABuildingEntry
 
 
-text \<open>A more CONCRETE specification might model the state of the system as an injective sequence: a sequence with no repetitions - iseq. The length of this sequence
+\<comment>\<open>A more CONCRETE specification might model the state of the system as an injective sequence: a sequence with no repetitions - iseq. The length of this sequence
 must be less than maxentry\<close>
 zstore CSystem =
   l :: "staff list"
   where 
-    "l \<in> iseq Staff" "#l \<le> maxentry" \<comment>\<open>The length of l (#l) represents the number of people inside the building.\<close>
+    "l \<in> iseq Staff" "#l \<le> maxentry"
+\<comment>\<open>The length of l represents the number of people inside the building.\<close>
 
-text \<open>A person who is not already inside the building may enter it, providing there is enough room.\<close>
+\<comment>\<open>A person who is not already inside the building may enter it, providing there is enough room.\<close>
 zoperation CEnterBuilding =
   params p \<in> Staff
   pre "#l < maxentry \<and> p \<notin> ran l"
   update "[l\<Zprime> =  l @ [p]]"
 
-text \<open>A person who is in the building may leave it.\<close>
+\<comment>\<open>A person who is in the building may leave it.\<close>
 zoperation CLeaveBuilding =
   params p \<in> Staff
   pre "#l < maxentry \<and> p \<in> ran l"
   update "[l\<Zprime> =  l\<restriction> (Staff-{p}) ]"
 
-text \<open>Initially, there is no one in the building\<close>
+\<comment>\<open>Initially, there is no one in the building\<close>
 zmachine CBuildingEntry =
   over CSystem
   init "[l\<Zprime> = []]"

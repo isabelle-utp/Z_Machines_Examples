@@ -2,26 +2,27 @@ theory DataArray_13_378
   imports "Z_Machines.Z_Machine"
 begin
 
-text\<open>Usingz ex 13_378\<close>
+\<comment>\<open>Usingz ex 13_378\<close>
 
 subsection \<open> Types \<close>
 
-type_synonym "value" = int \<comment>\<open>value is a keyword, thus quoted\<close>
+type_synonym "value" = int
+\<comment>\<open>value is a keyword, thus quoted\<close>
 
-text\<open>In a model of a data array, each element may be represented by an object of Data. 
+\<comment>\<open>In a model of a data array, each element may be represented by an object of Data. 
 Different from the example in usingz, 
 we define Data as a basic type instead of a local state.\<close>
 type_synonym Data = "value"
 
 
-text \<open>We define the set of values\<close>
+\<comment>\<open>we define the set of values\<close>
 consts
   Value :: "value set"
   
 subsection \<open> State Space \<close>
 
 
-text \<open>Array is Global state in UsingZ, we define it as a local zstore.
+\<comment>\<open>Array is Global state in UsingZ, we define it as a local zstore.
 The state of the array is represented  with a single component, a sequence of Data elements \<close> 
 zstore Array =
   array :: "Data list"
@@ -37,11 +38,12 @@ definition "arr = (array :: Data list \<Longrightarrow> Array)"
 
 term "($arr[0::nat])\<^sub>e"
 
-text \<open>Operation\<close>
+\<comment>\<open>Operation\<close>
 zoperation ArrayAssignData =
   over Array
   params index\<in>Indices  new\<in>Value
-  pre "index< length array" \<comment>\<open>index is the index of array
+  pre "index< length array"
+\<comment>\<open>index is the index of array
 in Z : index \<in> dom array, 
 in ZM we map it to : index < lenght array.\<close>
   update "[array[index]\<Zprime> =new]"
@@ -55,34 +57,39 @@ zmachine ArrayProc=
 def_consts Indices = "{0..4}"
 def_consts Value = "{0..7}"
 
-animate ArrayProc
+(*animate ArrayProc*)
 
 record PriData = 
   priority:: "nat"
   data :: "Data"
 show_record PriData
 
-text\<open>We convert PriData from a local state in the book 
+\<comment>\<open>We convert PriData from a local state in the book 
 to a record.\<close>
 
 consts PriDataSet :: "PriData set"
 
 
-text\<open>A new state space\<close>
-text\<open>We model a stack of data objects, each of which contains a piece of data and a priority value\<close>
+\<comment>\<open>a new state space\<close>
+\<comment>\<open>we model a stack of data objects, each of which contains a piece of data and a priority value\<close>
 zstore Stack =
   stack ::"PriData list"
-  where "\<forall> i< length(stack). \<forall>j< length(stack). i<j \<longrightarrow> priority(stack ! i) \<ge> priority(stack ! j)" \<comment>\<open>The objects in the stack are ordered with respect to their priority values. If object a has a lower index than object b(i.e.,if it is nearer the top of the stack), then it must have a higher priority value\<close>
+  where "\<forall> i< length(stack). \<forall>j< length(stack). i<j \<longrightarrow> priority(stack ! i) \<ge> priority(stack ! j)"
+\<comment>\<open>The objects in the stack are ordered with respect to their priority values. 
+If object a has a lower index than object b(i.e.,if it is nearer the top of the stack), then it must have a higher priority value\<close>
 
 
-text \<open>At any time, only the data object with the highest priority may be operated upon:
+
+\<comment>\<open>At any time, only the data object with the highest priority may be operated upon:
 that is, the object at the head of the stack.
+
 A new value is added to the top of the stack, its priority is assigned as the value of the previous biggest value plus 1\<close>
 zoperation StackAssignPriData =
   over Stack
   params new \<in> Value
   pre "stack \<noteq> []"
-  update "[stack\<Zprime> = \<lparr> priority = priority (hd stack) + 1, data = new \<rparr> # stack ]" \<comment>\<open>stack is a record list, we can NOT SEPERATELY update stack by updating 2 fields of data and priority , as they are not state variables. \<close>
+  update "[stack\<Zprime> = \<lparr> priority = priority (hd stack) + 1, data = new \<rparr> # stack ]"
+(* stack is a record list, we can NOT SEPERATELY update stack by updating 2 fields of data and priority , as they are not state variables.  *)
 
 
 zoperation Shine = 

@@ -2,7 +2,7 @@ theory FileSystem
   imports  "Z_Machines.Z_Machine"
 
 begin 
-text \<open>We define the basic types: keys and data for local operations of File, and name for global System\<close>
+\<comment>\<open>we define the basic types: keys and data for local operations of File, and name for global System\<close>
 type_synonym key = int
 type_synonym data = int
 type_synonym name = string
@@ -19,35 +19,35 @@ definition [z_defs]: "Report = {key_in_use,  key_not_in_use, okay, file_exists, 
 
 
 subsection \<open> Local State Space \<close>
-text \<open>A file should not associate the same key with two different pieces of data, hence the relation 'contents' should be a partial function.\<close>
+\<comment>\<open>A file should not associate the same key with two different pieces of data, hence the relation 'contents' should be a partial function.\<close>
 zstore File =
   contents :: "key \<Zpfun> data"
 
 subsection \<open> Local Operations \<close>
 
-text \<open>4 Local operations: operation of one file: read, write, add, delete, failtoreadwritedelete, failtoadd\<close>
+\<comment>\<open>4 Local operations: operation of one file: read, write, add, delete, failtoreadwritedelete, failtoadd\<close>
 
-text \<open>Read0 /\ Success: A successful read operation requires an existing key k as input and provides the corresponding datum d as output, also reports 'okay':\<close>
+\<comment>\<open>Read0 /\ Success: A successful read operation requires an existing key k as input and provides the corresponding datum d as output, also reports 'okay':\<close>
 zoperation ReadSuccess =
   over File
   params k\<in>KEY d\<in>DATA r\<in>"{okay}"
   pre " k\<in>dom contents \<and> d= contents k"
  
-text \<open>Write0 /\ Success: A successful write operation replaces the datum stored under an existing key k with new input datum d, and provides report output as 'okay'\<close>
+\<comment>\<open>Write0 /\ Success: A successful write operation replaces the datum stored under an existing key k with new input datum d, and provides report output as 'okay'\<close>
 zoperation WriteSuccess =
   over File
   params k\<in>KEY d\<in>DATA r\<in>"{okay}"
   pre " k\<in>dom contents "
   update "[contents\<Zprime> = contents \<oplus> {k \<mapsto> d}]"
 
-text \<open>Add0 /\ Success: a successful add operation adds a new datum d to key k. It has a complementary precondition: the input key k must not be in the domain of contents. It produces a report of 'okay'\<close>
+\<comment>\<open>Add0 /\ Success: a successful add operation adds a new datum d to key k. It has a complementary precondition: the input key k must not be in the domain of contents. It produces a report of 'okay'\<close>
 zoperation AddSuccess =
   over File
   params k\<in>KEY d\<in>DATA r\<in>"{okay}"
   pre " k\<notin>dom contents "
   update "[contents\<Zprime> = contents \<oplus> {k \<mapsto> d}]"
 
-text \<open>Delete0 /\ Success: a successful delete operation requires only that the input key k exists. the state of the file will change:The effect of removing the key is modelled using domain co-restriction: the maplet starting at k is removed from contents.
+\<comment>\<open>Delete0 /\ Success: a successful delete operation requires only that the input key k exists. the state of the file will change:The effect of removing the key is modelled using domain co-restriction: the maplet starting at k is removed from contents.
 It also produces a report of 'okay'\<close>
 zoperation DeleteSuccess =
   over File
@@ -55,7 +55,7 @@ zoperation DeleteSuccess =
   pre " k\<in>dom contents "
   update "[contents\<Zprime> = {k} \<Zndres> contents]"
 
-text \<open>KeyNotInUse: An error may arise because the specified key is not in use, this results in fail to read, write or delete. 
+\<comment>\<open>KeyNotInUse: An error may arise because the specified key is not in use, this results in fail to read, write or delete. 
 We renamed this operation is same as FailToRWD\<close>
 zoperation FailToRWD =
   over File
@@ -63,7 +63,7 @@ zoperation FailToRWD =
   pre " k\<notin>dom contents "
 (*it is not obvious for the reader to link the operation behaviour of key not in use to failtoRWD. *)
 
-text \<open>KeyInUse: renamed as FailToAdd because it results in fail to add\<close>
+\<comment>\<open>KeyInUse: renamed as FailToAdd because it results in fail to add\<close>
 zoperation FailToAdd =
   over File
   params k\<in>KEY r\<in>"{key_in_use}"
@@ -83,20 +83,20 @@ definition Init1 :: "File subst" where
   [z_defs]:
   "Init1 = 
    [contents\<Zprime> = {\<mapsto>}
-   ]"\<comment>\<open>When a file is initialised in 'init', it contains no data, so the value of 'contents' should be the empty function.\<close>
+   ]"
 
 zmachine FileProc =
   over File
   init Init1
   operations ReadSuccess WriteSuccess AddSuccess 
 DeleteSuccess FailToRWD FailToAdd
-
+\<comment>\<open>When a file is initialised in 'init', it contains no data, so the value of 'contents' should be the empty function.\<close>
 
 
 animate FileProc 
 
 subsection \<open> Global state space \<close>
-text \<open>A file system contains a number of files indexed using a set of names.
+\<comment>\<open>A file system contains a number of files indexed using a set of names.
 files is the collection of named files known to the system.
 opened is the set of files that are currently open.
 It is important that the system should not associate the same name with two different files: files must always be functional\<close>
@@ -110,7 +110,7 @@ zstore System =
 
 subsection \<open> Global operations, no local operation involved\<close>
 
-text \<open>Open0 /\ Success: A successful open operation adds a name n to the list of open files, and report 'okay'.
+\<comment>\<open>Open0 /\ Success: A successful open operation adds a name n to the list of open files, and report 'okay'.
 An open operation will fail if the input name n  denotes a file that is already open.\<close>
 zoperation OpenSuccess =
   over System
@@ -118,7 +118,7 @@ zoperation OpenSuccess =
   pre " n\<in>dom files \<and>  n\<notin> opened"
   update "[opened\<Zprime> = opened \<union> {n}]"
 
-text \<open>Close0 /\ Success : A successful close operation removes a name n from the list of open files.
+\<comment>\<open>Close0 /\ Success : A successful close operation removes a name n from the list of open files.
 A close operation will fail if the input name n does not denote an open file.\<close>
 zoperation CloseSuccess =
   over System
@@ -127,7 +127,7 @@ zoperation CloseSuccess =
   update "[opened\<Zprime> = opened - {n}]"
 
 
-text \<open>Create0 /\ Success : A successful create operation adds a new name n to the list of files known to the system.
+\<comment>\<open>Create0 /\ Success : A successful create operation adds a new name n to the list of files known to the system.
 the state of the file associated with name n
 is described by the Init of File\<close>
 zoperation CreateSuccess =
@@ -136,37 +136,38 @@ zoperation CreateSuccess =
   pre " n \<notin> dom files"
   update "[files\<Zprime> = files \<oplus> {n \<mapsto> \<lblot> contents \<leadsto> {\<mapsto>} \<rblot>}]"
 
-text \<open>Destroy0 /\ Success: A successful destroy operation removes a name from the list of files, do-
+\<comment>\<open>Destroy0 /\ Success: A successful destroy operation removes a name from the list of files, do-
 main co-restricting the function files\<close>
 zoperation DestroySuccess =
   over System
   params n\<in>NAME r\<in>"{okay}"
   pre "n\<notin>opened \<and>  n \<in> dom files "
   update "[files\<Zprime> = {n} \<Zndres> files]"
-\<comment> \<open>We wish to insist that input n is not an element of open, thus preventing the destruction of open files. in Z operation FileManage invariant 'opened\<Zprime>= opened' guarantee that we can only destroy a closed file, but in ZM it is not enough to have 'opened\<Zprime>= opened' in update, because in the System invariant opened \<subseteq> dom files assures if we cannot remove n from open, then we cannot remove n from the domain of files.
-But in ZM, we need 'n\<notin>opened' as an explicit precondition\<close>
+(*We wish to insist that input n is not an element of open, thus preventing the destruction of open files. in Z operation FileManage invariant 'opened\<Zprime>= opened' guarantee that we can only destroy a closed file, but in ZM it is not enough to have ' opened\<Zprime>= opened' in update, because in the System invariant opened \<subseteq> dom files assures if we cannot remove n from open, then we cannot remove n from the domain of files. 
+But in ZM, we need 'n\<notin>opened' as an explicit precondition*)
+
 
 subsection \<open>Global report operations, , no local operation involved\<close>
 
-text \<open>If we attempt to create a file using a name that is already in use, we will receive a report complaining that a file with that name exists\<close>
+\<comment>\<open>If we attempt to create a file using a name that is already in use, we will receive a report complaining that a file with that name exists\<close>
 zoperation FileExists =
   over System
   params n\<in>NAME r\<in>"{file_exists}"
   pre " n \<in> dom files"
 
-text \<open>If we attempt to destroy a file using a name that is not in use, we will receive a report complaining that the file does not exist\<close>
+\<comment>\<open>if we attempt to destroy a file using a name that is not in use, we will receive a report complaining that the file does not exist\<close>
 zoperation FileDoesNotExists =
   over System
   params n\<in>NAME r\<in>"{file_does_not_exist}"
   pre " n \<notin> dom files"
 
-text \<open>Sometimes a file will be open when it should be closed\<close>
+\<comment>\<open>Sometimes a file will be open when it should be closed\<close>
 zoperation FileIsOpen =
   over System
   params n\<in>NAME r\<in>"{file_is_open}"
   pre " n \<in> opened"
 
-text \<open>Sometimes a file will be closed when it should be open\<close>
+\<comment>\<open>sometimes a file will be closed when it should be open\<close>
 zoperation FileIsNotOpen =
   over System
   params n\<in>NAME r\<in>"{file_is_not_open}"
@@ -178,7 +179,7 @@ zoperation FileIsNotOpen =
 
 subsection \<open> Global operations  Promoted from Local operations on one file\<close>
 
-text \<open>If the file exists and is open (i.e., n\<in>opened), then the four operations are successful: read write add delete\<close>
+\<comment>\<open>if the file exists and is open (i.e., n\<in>opened), then the four operations are successful: read write add delete\<close>
 
 zoperation KeyRead0Success =
   over System
@@ -212,21 +213,24 @@ zoperation KeyDelete0Success =
 
 
 
-text\<open>The following 2 Report operation is due to status of the key in the file\<close>
+\<comment>\<open>the following 2 Report operation is due to status of the key in the file\<close>
 
-text \<open>Fail to read, write or delete\<close>
+\<comment>\<open>fail to read, write or delete\<close>
 zoperation KeyFailToRWD0 =
   over System
   params n\<in>NAME k\<in>KEY r\<in>"{key_not_in_use}"
   pre "n\<in>opened \<and>  k\<notin>dom($files[n]:contents) "
 
-text \<open>Fail to add\<close>
+
+\<comment>\<open>fail to add\<close>
 zoperation KeyFailToAdd0 =
   over System
   params n\<in>NAME  k\<in>KEY r\<in>"{key_in_use}"
   pre "n\<in>opened \<and>  k\<in>dom($files[n]:contents) "
 
-text \<open>The following  Report operation is due to status of the file\<close>
+
+
+\<comment>\<open>the following  Report operation is due to status of the file\<close>
 (*these 2 are the same as FileIsNotOpen and FileDoesNotExists, still no way to link the report to a specific file management operation *)
 zoperation FileFailureDueToFileIsNotOpen =
   over System
@@ -239,7 +243,7 @@ zoperation FileFailureDueToFileDoesNotExists =
   pre " n \<notin> dom files"
 
 
-text \<open>When the file system is initialised, there are no files.\<close>
+\<comment>\<open>When the file system is initialised, there are no files.\<close>
 definition Init :: "System subst" where
   [z_defs]:
   "Init = 

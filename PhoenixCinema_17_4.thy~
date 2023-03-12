@@ -3,7 +3,8 @@ theory PhoenixCinema_17_4
   imports "Z_Machines.Z_Machine"
 begin
 
-text\<open>UsingZ ex 17.4:The Phoenix is a cinema whose box office works as follows. A customer may telephone and ask for a ticket. The box office clerk decides if there is an unsold ticket so as to accommodate the request.  If there is, then a note is made to reserve a ticket for the caller. When the customer arrives, the box office clerk allocates an unsold ticket which identifies the seat.\<close>
+text\<open>UsingZ ex 17.4:The Phoenix is a cinema whose box office works as follows. A customer may telephone and ask for a ticket. The box office clerk decides if there is an unsold ticket so as to accommodate the request. 
+If there is, then a note is made to reserve a ticket for the caller. When the customer arrives, the box office clerk allocates an unsold ticket which identifies the seat.\<close>
 
 subsection \<open> Phoenix \<close>
 
@@ -56,6 +57,7 @@ zmachine PhoenixMachine =
 
 text \<open>animation\<close>
 animate PhoenixMachine 
+
 
 
 subsection \<open> Apollo \<close>

@@ -21,7 +21,7 @@ zstore ADict =
 
 
 subsection \<open> a concrete State Space \<close>
-text \<open>The task of implementing the dictionary efficiently is a searching problem. One solution is to keep the dictionary in a sorted order, and employ a binary search method.\<close>
+\<comment>\<open>The task of implementing the dictionary efficiently is a searching problem. One solution is to keep the dictionary in a sorted order, and employ a binary search method.\<close>
 zstore CDict1 =
   cd1 :: "word list" 
   where 

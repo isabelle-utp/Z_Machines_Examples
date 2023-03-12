@@ -13,7 +13,7 @@ type_synonym seat = integer
 type_synonym customer = string
 type_synonym performance = string
 
-text\<open>A show may be a standard performance, or it may be a premiere.\<close>
+\<comment>\<open>A show may be a standard performance, or it may be a premiere.\<close>
 enumtype Status = standard | premiere
 definition [z_defs]: "Status = {standard, premiere}"
 
@@ -37,14 +37,18 @@ fun free :: "(seat set) \<times> (seat set)  \<Rightarrow> nat"
 subsection \<open> State Space \<close>
   
 zstore BoxOffice = 
-  seating :: "seat set" \<comment> \<open>seating to represent the seating allocated for the performance, it is a subset of SEAT.\<close>
-  sold :: "seat \<Zpfun> customer"   \<comment> \<open>  a record of which seats have been sold, and to whom. It is a partial function, that is, no seat can be sold to two different customers \<close>
-  status:: "Status"   \<comment> \<open>status: the type of the performance: standard or premier\<close>
-  friends:: "customer set"   \<comment> \<open> a special type of customers who signed up as friends and are entitled to buy premier performance\<close>
-
+  \<comment> \<open>seating to represent the seating allocated for the performance, it is a subset of SEAT.\<close>
+  seating :: "seat set"
+  \<comment> \<open>  a record of which seats have been sold, and to whom. It is a partial function, that is, no seat can be sold to two different customers \<close>
+  sold :: "seat \<Zpfun> customer"
+  \<comment> \<open>status: the type of the performance: standard or premier\<close>
+  status:: "Status"
+  \<comment> \<open> a special type of customers who signed up as friends and are entitled to buy premier performance\<close>
+  friends:: "customer set"
 where 
-   "dom(sold) \<subseteq> seating" \<comment> \<open> invariant 1: It should not be possible to book seating that has not been allocated for the performance \<close>
-  (* \<comment> \<open> invariant 2: If the current performance is a premiere, then seats may be sold only to friends of the theatre. \<close>
+  \<comment> \<open> invariant 1: It should not be possible to book seating that has not been allocated for the performance \<close>
+  "dom(sold) \<subseteq> seating"
+ (* \<comment> \<open> invariant 2: If the current performance is a premiere, then seats may be sold only to friends of the theatre. \<close>
    "status= premiere \<longrightarrow> ran sold \<subseteq> friends"
 *)
 
@@ -57,13 +61,16 @@ zstore GlobalOffice =
 
 subsection \<open> Operations \<close>
 
-text \<open>Operation 'Purchase0' upon the state of the box office system is the purchasing of a single seat for the current performance by a customer.
-this seat is denoted by s; the customer buying it is c;
+\<comment> \<open>Operation 'Purchase0' upon the state of the box office system is the purchasing of a single seat for the current performance by a customer.
+this seat is denoted by s;
+the customer buying it is c;
 If the operation is to be a success, then s must be available for sale beforehand;
-Afterwards, the sold relation should be modified to indicate that s has been sold to customer c;
+Afterwards, the sold relation should be modified to indicate that s has been
+sold to customer c;
 As seats allocated for this performance are unchanged by the operation, we omit seat in update section.
 \<close>
-text\<open>PurchaseSucess = Purchase0 /\ Success, input s and c, and output r as okay\<close>
+\<comment>\<open>PurchaseSucess = Purchase0 /\ Success, 
+input s and c, and output r as okay\<close>
 zoperation PurchaseSuccess =
   over BoxOffice
   params s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
@@ -71,20 +78,20 @@ zoperation PurchaseSuccess =
   update "[sold\<Zprime> =  sold \<oplus> {s \<mapsto> c}
           ]"
 
-text \<open>ex13.4\<close>
+\<comment>\<open>ex13.4\<close>
 zoperation GlobalPurchaseSucess = 
   over GlobalOffice
   params p\<in> PERFORMANCE  s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
   pre "p \<in> dom booking \<and> s\<in>($booking[p]:seating-dom($booking[p]:sold)) "
   update "[booking[p]:sold\<Zprime> = $booking[p]:sold \<oplus> {s \<mapsto> c}]"
 
-text \<open>ex12.12: PurchaseFailure = NotAvailable /\ Failure\<close>
+\<comment>\<open>ex12.12: PurchaseFailure = NotAvailable /\ Failure\<close>
 zoperation PurchaseFailure =
   over BoxOffice
   params s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
   pre "s \<notin> (seating-dom(sold))"
 
-text \<open>ex13.4\<close>
+\<comment>\<open>ex13.4\<close>
 zoperation GlobalPurchaseFailure =
   over GlobalOffice
   params p\<in> PERFORMANCE s\<in>SEAT c\<in>CUSTOMER r\<in>"{sorry}"
@@ -92,17 +99,19 @@ zoperation GlobalPurchaseFailure =
 (*ex13.4 pre: p \<in> dom booking \<and> *)
 
 
-text \<open> Having purchased a seat, a customer may decide not to attend the performance. In this case, they may return the seat to the box office 
+\<comment>  \<open> Having purchased a seat, a customer may decide not to attend the performance. In this case, they may return the seat to the box office 
 The precondition for this operation is that the seat s has been sold to the customer c.
 The effect is defined using domain subtraction \<Zndres> to remove  {s \<mapsto> c} from sold\<close>
 
-text \<open>ReturnSucess= Return0 \<and> Success\<close>
+\<comment> \<open>ReturnSucess= Return0 \<and> Success\<close>
+
 zoperation ReturnSuccess =
   over BoxOffice
   params s\<in>SEAT c\<in>CUSTOMER r\<in>"{okay}"
   pre "s \<in> dom(sold) \<and> c = sold s"
   update "[sold\<Zprime> = {s} \<Zndres> sold
            ]" 
+
 
 zoperation GlobalReturnSuccess =
   over GlobalOffice
@@ -111,7 +120,7 @@ zoperation GlobalReturnSuccess =
   update "[booking[p]:sold\<Zprime> = {s} \<Zndres> $booking[p]:sold 
            ]" 
 
-text \<open>ex12.13: ReturnFailure= NotPossible \<and> Failure
+\<comment> \<open>ex12.13: ReturnFailure= NotPossible \<and> Failure
 If this seat has not been sold, or if it has been sold to another customer, then it can not be returned\<close>
 zoperation ReturnFailure =
   over BoxOffice
@@ -126,17 +135,18 @@ zoperation GlobalReturnFailure =
   pre "p\<notin> dom booking \<or> (s \<in> dom($booking[p]:sold) \<and>  c \<noteq> ($booking[p]:sold) s) \<or> s \<notin> dom($booking[p]:sold)"
  (*do we need pre: s \<in> dom($booking[p]:sold) \<and>  ?*)
 
-text \<open>ex 12.10: output variables as params \<close>
+\<comment> \<open>ex 12.10: output variables as params \<close>
 zoperation QueryAvailability =
   over BoxOffice
   params available\<in>"{free(seating, dom sold)}"
 
-text \<open> this operation shows the free tickets of one performance.
+\<comment> \<open> this operation shows the free tickets of one performance.
 p is input,available is output.  \<close>
 zoperation GlobalQueryAvailability =
   over GlobalOffice
   params p\<in>PERFORMANCE available \<in>"{0..<card(SEAT)+1}"
-  pre "available = free($booking[p]:seating, dom ($booking[p]:sold))" \<comment>\<open>as we can not invoke the parameter within the params section, we describe the relation between available and p in pre section\<close>
+  pre "available = free($booking[p]:seating, dom ($booking[p]:sold))"
+\<comment>\<open>as we can not invoke the parameter within the params section, we describe the relation between available and p in pre section\<close>
 
 subsection \<open> Structural Invariants \<close>
 
@@ -177,6 +187,8 @@ lemma GlobalQueryAvailability_inv[hoare_lemmas]: "GlobalQueryAvailability(a) pre
 
 
 subsection \<open> Safety Requirements \<close>
+
+
 
 
 subsection \<open> Machine and Animation \<close>
